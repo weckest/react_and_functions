@@ -1,0 +1,57 @@
+﻿@page "/studentCount"
+@inject HttpClient httpClient
+@using System.Collections.Generic
+@using System.Text.Json
+
+<h1>Schools</h1>
+
+@if (schoolCounts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class='table table-hover'>
+        <thead>
+            <tr>
+                <th>School</th>
+                <th>Student Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in schoolCounts)
+            {
+                <tr>
+                    <td>@item.Key</td>
+                    <td>@item.Value</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<KeyValuePair<string, int>>? schoolCounts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await load();
+    }
+
+    protected async Task load()
+    {
+        var response = await httpClient.GetStringAsync($"{Constants.BASE_URL}api/students/count-by-school");
+
+        using (JsonDocument doc = JsonDocument.Parse(response))
+        {
+            schoolCounts = new List<KeyValuePair<string, int>>();
+
+            foreach (JsonElement element in doc.RootElement.EnumerateArray())
+            {
+                string school = element.GetProperty("School").GetString() ?? "Unknown";
+                int count = element.GetProperty("Count").GetInt32();
+                schoolCounts.Add(new KeyValuePair<string, int>(school, count));
+            }
+        }
+    }
+}
